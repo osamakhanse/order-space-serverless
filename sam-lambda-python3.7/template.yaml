@@ -1,0 +1,138 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  sam-lambda-python3.7
+
+  Sample SAM Template for sam-lambda-python3.7
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 600
+
+Resources:
+
+  MyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Cors:
+        AllowOrigin: "'*'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Access-Control-Allow-Origin'" # Added Access-Control-Allow-Origin header here
+        AllowMethods: "'OPTIONS,GET,PUT,POST,DELETE'"
+      # Rest of the properties
+
+      DefinitionBody:
+        swagger: '2.0'
+        info:
+          title: order-app-v1
+     
+
+        paths:
+          /orders:
+            post:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${Order.Arn}/invocations"
+                responses:
+                    '-': # This regex pattern will match any status code
+                      statusCode: '200'
+              responses:
+                '200':
+                  description: 'Success'
+          /products:
+            post:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetProducts.Arn}/invocations"
+                responses:
+                    '-': # This regex pattern will match any status code
+                      statusCode: '200'
+              responses:
+                '200':
+                  description: 'Success'
+          /verify-order-code:
+            post:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${VerifyOrderCode.Arn}/invocations"
+                responses:
+                    '-': # This regex pattern will match any status code
+                      statusCode: '200'
+              responses:
+                '200':
+                  description: 'Success'
+          /user:
+            post:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${User.Arn}/invocations"
+                responses:
+                    '-': # This regex pattern will match any status code
+                      statusCode: '200'
+              responses:
+                '200':
+                  description: 'Success'
+  GetProducts:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: get_products/
+      Role: 'arn:aws:iam::061378716384:role/LabRole'
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Events:
+        Order:
+          Type: Api
+          Properties:
+            Path: /products
+            Method: post
+            RestApiId: !Ref MyApi
+  
+  Order:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: orders/
+      Role: 'arn:aws:iam::061378716384:role/LabRole'
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Events:
+        Order:
+          Type: Api
+          Properties:
+            Path: /orders
+            Method: post
+            RestApiId: !Ref MyApi
+
+  VerifyOrderCode:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: verify_order_code/
+      Role: 'arn:aws:iam::061378716384:role/LabRole'
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Events:
+        Order:
+          Type: Api
+          Properties:
+            Path: /verify-order-code
+            Method: post
+            RestApiId: !Ref MyApi
+            
+  User:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: users/
+      Role: 'arn:aws:iam::061378716384:role/LabRole'
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Events:
+        Order:
+          Type: Api
+          Properties:
+            Path: /user
+            Method: post
+            RestApiId: !Ref MyApi
